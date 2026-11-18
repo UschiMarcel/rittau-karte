@@ -14,6 +14,9 @@ public final class Card {
     public static final String MODE_LINK = "link";
     public static final String MODE_INSTAGRAM = "instagram";
     public static final String MODE_CV = "cv";
+    public static final String DEFAULT_LINKEDIN = "https://www.linkedin.com/in/marcel-rittau-4a46b4281/";
+    /** Wird hochgezählt, wenn neue Standardwerte auch bei bestehenden Installationen ankommen sollen. */
+    private static final int DEFAULTS_VERSION = 2;
     public static final String DEFAULT_CV =
             "https://uschimarcel.github.io/Portfolio/dateien/Lebenslauf_Marcel_Rittau.pdf";
 
@@ -44,7 +47,8 @@ public final class Card {
         k.web = p.getString("web", "https://uschimarcel.github.io/Portfolio/");
         k.city = p.getString("city", "Köln");
         k.instagram = p.getString("instagram", "");
-        k.linkedin = p.getString("linkedin", "");
+        k.linkedin = p.getString("linkedin", DEFAULT_LINKEDIN);
+        if (p.getInt("defaults", 1) < 2 && k.linkedin.trim().isEmpty()) k.linkedin = DEFAULT_LINKEDIN;
         k.cv = p.getString("cv", DEFAULT_CV);
         k.mode = p.getString("mode", MODE_CONTACT);
         return k;
@@ -64,6 +68,7 @@ public final class Card {
                 .putString("linkedin", linkedin)
                 .putString("cv", cv)
                 .putString("mode", mode)
+                .putInt("defaults", DEFAULTS_VERSION)
                 .apply();
     }
 
@@ -125,6 +130,8 @@ public final class Card {
     /** Vollständiger Profil-Link; ein bloßer Name wird zu linkedin.com/in/name. */
     public String linkedinUrl() {
         String l = linkedin.trim();
+        int q = l.indexOf('?');            // Tracking wie ?utm_source=… abschneiden
+        if (q >= 0) l = l.substring(0, q);
         if (l.matches("(?i)^https?://.*")) return l;
         if (l.matches("(?i)^(www\\.)?linkedin\\.com/.*")) return "https://" + l;
         l = l.replaceFirst("^@", "").replaceFirst("(?i)^in/", "");
