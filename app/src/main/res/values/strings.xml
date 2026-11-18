@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">rittau Karte</string>
+    <string name="app_name">rittau</string>
     <string name="service_desc">rittau Karte – Visitenkarte per NFC</string>
     <string name="aid_desc">Visitenkarte als NFC-Tag</string>
     <string name="footer">Ein NFC-Tool von Marcel Rittau &lt;3</string>
