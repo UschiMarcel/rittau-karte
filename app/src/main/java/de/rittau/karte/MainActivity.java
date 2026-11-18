@@ -48,11 +48,11 @@ public class MainActivity extends Activity implements CardService.Listener {
     private boolean reducedMotion;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private TextView name, statement, status, chip, hint, nfcSettings, modeContact, modeLink, editToggle;
+    private TextView name, statement, status, chip, hint, nfcSettings, modeContact, modeLink, modeInstagram, editToggle;
     private LinearLayout meta, editBox;
     private ImageView shape;
     private ScrollView scroll;
-    private EditText fName, fRole, fCompany, fUnit, fEmail, fPhone, fWeb, fCity;
+    private EditText fName, fRole, fCompany, fUnit, fEmail, fPhone, fWeb, fCity, fInstagram, fLinkedin;
     private ObjectAnimator breathing;
 
     private final Runnable backToReady = this::updateNfcState;
@@ -79,6 +79,7 @@ public class MainActivity extends Activity implements CardService.Listener {
         nfcSettings = findViewById(R.id.nfcSettings);
         modeContact = findViewById(R.id.modeContact);
         modeLink = findViewById(R.id.modeLink);
+        modeInstagram = findViewById(R.id.modeInstagram);
         editToggle = findViewById(R.id.editToggle);
         editBox = findViewById(R.id.editBox);
         fName = findViewById(R.id.fName);
@@ -89,11 +90,14 @@ public class MainActivity extends Activity implements CardService.Listener {
         fPhone = findViewById(R.id.fPhone);
         fWeb = findViewById(R.id.fWeb);
         fCity = findViewById(R.id.fCity);
+        fInstagram = findViewById(R.id.fInstagram);
+        fLinkedin = findViewById(R.id.fLinkedin);
 
         setupLogo();
 
         modeContact.setOnClickListener(v -> setMode(Card.MODE_CONTACT));
         modeLink.setOnClickListener(v -> setMode(Card.MODE_LINK));
+        modeInstagram.setOnClickListener(v -> setMode(Card.MODE_INSTAGRAM));
         nfcSettings.setOnClickListener(v -> openNfcSettings());
         editToggle.setOnClickListener(v -> openEditor());
         findViewById(R.id.cancel).setOnClickListener(v -> closeEditor());
@@ -187,6 +191,14 @@ public class MainActivity extends Activity implements CardService.Listener {
             any |= addRow("Web", card.linkLabel(),
                     new Intent(Intent.ACTION_VIEW, Uri.parse(card.linkUrl())));
         }
+        if (card.hasLinkedin()) {
+            any |= addRow("LinkedIn", card.linkedinLabel(),
+                    new Intent(Intent.ACTION_VIEW, Uri.parse(card.linkedinUrl())));
+        }
+        if (card.hasInstagram()) {
+            any |= addRow("Instagram", "@" + card.instagramHandle(),
+                    new Intent(Intent.ACTION_VIEW, Uri.parse(card.instagramUrl())));
+        }
         if (!card.company.trim().isEmpty()) {
             any |= addRow("Firma", join(" – ", card.company.trim(), card.unit.trim()), null);
         }
@@ -249,16 +261,24 @@ public class MainActivity extends Activity implements CardService.Listener {
 
     private void updateModeUi() {
         boolean link = Card.MODE_LINK.equals(card.mode);
-        modeContact.setSelected(!link);
+        boolean insta = Card.MODE_INSTAGRAM.equals(card.mode);
+        modeContact.setSelected(!link && !insta);
         modeLink.setSelected(link);
+        modeInstagram.setSelected(insta);
         if (link && !card.hasLink()) {
-            hint.setText("Es ist noch keine Website eingetragen. Bis dahin geht dein Kontakt raus – trag unten unter „Deine Daten“ eine ein.");
+            hint.setText("Es ist noch keine Website eingetragen. Bis dahin geht dein Kontakt raus – trag sie unten unter „Deine Daten“ ein.");
         } else if (link) {
             hint.setText("Das andere Handy öffnet " + card.linkLabel()
                     + ". Klappt mit iPhone (ab XS) und Android.");
+        } else if (insta && !card.hasInstagram()) {
+            hint.setText("Es ist noch kein Instagram eingetragen. Bis dahin geht dein Kontakt raus – trag es unten unter „Deine Daten“ ein.");
+        } else if (insta) {
+            hint.setText("Das andere Handy öffnet dein Instagram-Profil @" + card.instagramHandle()
+                    + " – direkt in der Instagram-App, wenn sie installiert ist. Klappt mit iPhone (ab XS) und Android.");
         } else {
-            hint.setText("Android-Handys bieten direkt an, dich als Kontakt zu speichern. "
-                    + "iPhones zeigen eine Kontaktkarte per NFC nicht von selbst an – nimm dafür „Link“.");
+            hint.setText("Android-Handys bieten direkt an, dich als Kontakt zu speichern"
+                    + (card.hasLinkedin() ? " – inklusive LinkedIn-Profil" : "") + ". "
+                    + "iPhones zeigen eine Kontaktkarte per NFC nicht von selbst an – nimm dafür „Website“ oder „Instagram“.");
         }
     }
 
@@ -352,6 +372,8 @@ public class MainActivity extends Activity implements CardService.Listener {
         fPhone.setText(card.phone);
         fWeb.setText(card.web);
         fCity.setText(card.city);
+        fInstagram.setText(card.instagram);
+        fLinkedin.setText(card.linkedin);
         editToggle.setVisibility(View.GONE);
         editBox.setVisibility(View.VISIBLE);
         scroll.post(() -> scroll.smoothScrollTo(0, editBox.getTop()));
@@ -384,6 +406,8 @@ public class MainActivity extends Activity implements CardService.Listener {
         card.phone = fPhone.getText().toString().trim();
         card.web = fWeb.getText().toString().trim();
         card.city = fCity.getText().toString().trim();
+        card.instagram = fInstagram.getText().toString().trim();
+        card.linkedin = fLinkedin.getText().toString().trim();
         card.save(this);
         closeEditor();
         bindCard();

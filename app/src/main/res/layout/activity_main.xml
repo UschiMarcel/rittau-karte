@@ -147,7 +147,13 @@
                 android:id="@+id/modeLink"
                 style="@style/Toggle"
                 android:layout_marginLeft="8dp"
-                android:text="Link" />
+                android:text="Website" />
+
+            <TextView
+                android:id="@+id/modeInstagram"
+                style="@style/Toggle"
+                android:layout_marginLeft="8dp"
+                android:text="Instagram" />
         </LinearLayout>
 
         <TextView
@@ -227,6 +233,20 @@
             <EditText
                 android:id="@+id/fWeb"
                 style="@style/Field"
+                android:inputType="textUri" />
+
+            <TextView style="@style/FieldLabel" android:text="Instagram" />
+            <EditText
+                android:id="@+id/fInstagram"
+                style="@style/Field"
+                android:hint="\@deinname"
+                android:inputType="textUri" />
+
+            <TextView style="@style/FieldLabel" android:text="LinkedIn" />
+            <EditText
+                android:id="@+id/fLinkedin"
+                style="@style/Field"
+                android:hint="linkedin.com/in/deinname"
                 android:inputType="textUri" />
 
             <TextView style="@style/FieldLabel" android:text="Ort" />
