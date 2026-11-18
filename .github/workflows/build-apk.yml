@@ -1,0 +1,74 @@
+name: APK bauen
+
+# Läuft bei jedem Push auf main: baut die App, zählt die Version hoch
+# und veröffentlicht sie als neues Release. Der Link
+# https://github.com/<repo>/releases/latest/download/rittau-karte.apk
+# zeigt immer auf die neueste Version.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Logo holen
+        run: |
+          mkdir -p app/src/main/res/drawable-nodpi
+          F=app/src/main/res/drawable-nodpi/logo.png
+          if [ ! -f "$F" ]; then
+            curl -fsSL https://uschimarcel.github.io/Portfolio/bilder/logo.png -o "$F" || true
+          fi
+          if [ -f "$F" ] && ! file "$F" | grep -q "PNG image"; then
+            echo "Logo ist kein PNG – die App zeigt einen Platzhalter."; rm -f "$F"
+          fi
+
+      - name: APK bauen
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Signatur prüfen
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk rittau-karte.apk
+          SIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          "$SIGNER" verify --print-certs rittau-karte.apk | grep -i "SHA-256" | head -1
+          "$SIGNER" verify --print-certs rittau-karte.apk | grep -qi "CN=Marcel Rittau" \
+            || { echo "APK ist nicht mit dem rittau-Schlüssel signiert – Updates würden scheitern."; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rittau-karte-apk
+          path: rittau-karte.apk
+
+      - name: Release veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.${{ github.run_number }}
+          name: rittau Karte 1.${{ github.run_number }}
+          body: |
+            Neue Version der rittau Karte.
+            Installieren: rittau-karte.apk antippen – die App wird einfach über die alte installiert, deine Daten bleiben.
+          files: rittau-karte.apk
+          make_latest: "true"

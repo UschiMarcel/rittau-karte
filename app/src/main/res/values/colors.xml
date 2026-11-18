@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="paper">#F3EEE3</color>
+    <color name="paper_2">#E9E2D2</color>
+    <color name="paper_3">#DED5C1</color>
+    <color name="field">#FBF8F1</color>
+    <color name="ink">#151412</color>
+    <color name="ink_2">#4A463E</color>
+    <color name="ink_3">#6E685C</color>
+    <color name="lime">#CDF443</color>
+    <color name="err">#8A1500</color>
+    <color name="err_bg">#FFD9E9</color>
+    <color name="ok">#1F5A00</color>
+</resources>

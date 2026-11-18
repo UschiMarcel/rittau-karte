@@ -1,0 +1,64 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Versionsnummer kommt vom GitHub-Build (jeder Build zählt hoch) – so lässt sich jede neue APK
+// einfach über die alte installieren.
+def buildNumber = (System.getenv('VERSION_CODE') ?: '1').toInteger()
+def repoSlug = System.getenv('GITHUB_REPOSITORY') ?: 'UschiMarcel/rittau-karte'
+
+// Fester Signaturschlüssel: Updates müssen immer mit demselben Schlüssel signiert sein.
+def keystoreFile = rootProject.file('signing/rittau-karte.jks')
+def passwordFile = rootProject.file('signing/password.txt')
+def keystorePassword = System.getenv('KEYSTORE_PASSWORD') ?:
+        (passwordFile.exists() ? passwordFile.text.trim() : null)
+
+android {
+    namespace 'de.rittau.karte'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'de.rittau.karte'
+        minSdk 24
+        targetSdk 34
+        versionCode buildNumber
+        versionName "1.${buildNumber}"
+        buildConfigField 'String', 'REPO', "\"${repoSlug}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        rittau {
+            if (keystoreFile.exists() && keystorePassword) {
+                storeFile keystoreFile
+                storePassword keystorePassword
+                keyAlias 'rittau'
+                keyPassword keystorePassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (keystoreFile.exists() && keystorePassword) {
+                signingConfig signingConfigs.rittau
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
