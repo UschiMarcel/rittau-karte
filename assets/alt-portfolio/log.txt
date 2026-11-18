@@ -1,0 +1,5 @@
+403 https://marcelrittau.myportfolio.com/ -> assets/alt-portfolio/seite.html
+403 https://marcelrittau.myportfolio.com/favicon.ico -> assets/alt-portfolio/favicon.ico
+200 https://cdn.myportfolio.com/c32dad5f-81d8-4d5d-ae4b-0cb41d2feb41/3246e0b1-e851-49ad-9e49-cd70637a82a9_rwc_1x142x344x203x4096.png?h=9c8a76cdf8301da80bc7fcdcfd4a3f16 -> assets/alt-portfolio/header-logo.png
+assets/alt-portfolio/header-logo.png: PNG image data, 344 x 431, 8-bit/color RGBA, non-interlaced
+assets/alt-portfolio/log.txt: ASCII text
