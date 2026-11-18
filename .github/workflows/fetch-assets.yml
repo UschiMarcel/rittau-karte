@@ -6,7 +6,7 @@ name: Logo vom alten Portfolio holen
 on:
   push:
     branches: [main]
-    paths: [".github/workflows/fetch-assets.yml"]
+    paths: [".github/workflows/fetch-assets.yml"]  # v2
   workflow_dispatch:
 
 permissions:
@@ -18,22 +18,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Bilder laden
+        shell: bash {0}
         run: |
-          set -x
           D=assets/alt-portfolio; mkdir -p "$D"
-          UA="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36"
-          curl -fsSL -A "$UA" https://marcelrittau.myportfolio.com/ -o "$D/seite.html"
-          grep -oiE '<link[^>]+>' "$D/seite.html" | grep -iE 'icon' > "$D/icon-links.txt" || true
-          cat "$D/icon-links.txt"
-          i=0
-          grep -oiE 'href="[^"]+"' "$D/icon-links.txt" | sed -E 's/href="([^"]+)"/\1/I' | sed 's/&amp;/\&/g' | sort -u | while read -r u; do
-            case "$u" in //*) u="https:$u";; /*) u="https://marcelrittau.myportfolio.com$u";; esac
-            i=$((i+1)); curl -fsSL -A "$UA" "$u" -o "$D/icon-$i.bin" && echo "$u" > "$D/icon-$i.url" || true
-          done
-          curl -fsSL -A "$UA" https://marcelrittau.myportfolio.com/favicon.ico -o "$D/favicon.ico" || true
-          curl -fsSL -A "$UA" "https://cdn.myportfolio.com/c32dad5f-81d8-4d5d-ae4b-0cb41d2feb41/3246e0b1-e851-49ad-9e49-cd70637a82a9.png" -o "$D/header-logo-original.png" || true
-          curl -fsSL -A "$UA" "https://cdn.myportfolio.com/c32dad5f-81d8-4d5d-ae4b-0cb41d2feb41/3246e0b1-e851-49ad-9e49-cd70637a82a9_rwc_1x142x344x203x4096.png?h=9c8a76cdf8301da80bc7fcdcfd4a3f16" -o "$D/header-logo.png" || true
-          for f in "$D"/*; do file "$f"; done
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+          get() { code=$(curl -sSL -A "$UA" -H "Accept-Language: de-DE,de;q=0.9" -H "Accept: text/html,image/*,*/*" -o "$2" -w "%{http_code}" "$1"); echo "$code $1 -> $2" >> "$D/log.txt"; [ "$code" = "200" ] || rm -f "$2"; }
+          get https://marcelrittau.myportfolio.com/ "$D/seite.html"
+          if [ -f "$D/seite.html" ]; then
+            grep -oiE '<link[^>]+>' "$D/seite.html" | grep -iE 'icon' > "$D/icon-links.txt"
+            i=0
+            for u in $(grep -oiE 'href="[^"]+"' "$D/icon-links.txt" | sed -E 's/^href="//I; s/"$//; s/&amp;/\&/g' | sort -u); do
+              case "$u" in //*) u="https:$u";; /*) u="https://marcelrittau.myportfolio.com$u";; esac
+              i=$((i+1)); get "$u" "$D/icon-$i.bin"
+            done
+          fi
+          get https://marcelrittau.myportfolio.com/favicon.ico "$D/favicon.ico"
+          get "https://cdn.myportfolio.com/c32dad5f-81d8-4d5d-ae4b-0cb41d2feb41/3246e0b1-e851-49ad-9e49-cd70637a82a9_rwc_1x142x344x203x4096.png?h=9c8a76cdf8301da80bc7fcdcfd4a3f16" "$D/header-logo.png"
+          for f in "$D"/*; do file "$f" >> "$D/log.txt"; done
+          cat "$D/log.txt"
+          exit 0
       - name: Committen
         run: |
           git config user.name "github-actions[bot]"
