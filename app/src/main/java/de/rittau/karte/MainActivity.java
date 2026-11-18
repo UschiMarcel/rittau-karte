@@ -48,11 +48,11 @@ public class MainActivity extends Activity implements CardService.Listener {
     private boolean reducedMotion;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private TextView name, statement, status, chip, hint, nfcSettings, modeContact, modeLink, modeInstagram, editToggle;
+    private TextView name, statement, status, chip, hint, nfcSettings, modeContact, modeLink, modeInstagram, modeCv, editToggle;
     private LinearLayout meta, editBox;
     private ImageView shape;
     private ScrollView scroll;
-    private EditText fName, fRole, fCompany, fUnit, fEmail, fPhone, fWeb, fCity, fInstagram, fLinkedin;
+    private EditText fName, fRole, fCompany, fUnit, fEmail, fPhone, fWeb, fCity, fInstagram, fLinkedin, fCv;
     private ObjectAnimator breathing;
 
     private final Runnable backToReady = this::updateNfcState;
@@ -80,6 +80,7 @@ public class MainActivity extends Activity implements CardService.Listener {
         modeContact = findViewById(R.id.modeContact);
         modeLink = findViewById(R.id.modeLink);
         modeInstagram = findViewById(R.id.modeInstagram);
+        modeCv = findViewById(R.id.modeCv);
         editToggle = findViewById(R.id.editToggle);
         editBox = findViewById(R.id.editBox);
         fName = findViewById(R.id.fName);
@@ -92,12 +93,15 @@ public class MainActivity extends Activity implements CardService.Listener {
         fCity = findViewById(R.id.fCity);
         fInstagram = findViewById(R.id.fInstagram);
         fLinkedin = findViewById(R.id.fLinkedin);
+        fCv = findViewById(R.id.fCv);
 
         setupLogo();
 
         modeContact.setOnClickListener(v -> setMode(Card.MODE_CONTACT));
         modeLink.setOnClickListener(v -> setMode(Card.MODE_LINK));
         modeInstagram.setOnClickListener(v -> setMode(Card.MODE_INSTAGRAM));
+        modeCv.setOnClickListener(v -> setMode(Card.MODE_CV));
+        findViewById(R.id.shareCv).setOnClickListener(v -> shareCv());
         nfcSettings.setOnClickListener(v -> openNfcSettings());
         editToggle.setOnClickListener(v -> openEditor());
         findViewById(R.id.cancel).setOnClickListener(v -> closeEditor());
@@ -199,6 +203,10 @@ public class MainActivity extends Activity implements CardService.Listener {
             any |= addRow("Instagram", "@" + card.instagramHandle(),
                     new Intent(Intent.ACTION_VIEW, Uri.parse(card.instagramUrl())));
         }
+        if (card.hasCv()) {
+            any |= addRow("Lebenslauf", "PDF ansehen",
+                    new Intent(Intent.ACTION_VIEW, Uri.parse(card.cvUrl())));
+        }
         if (!card.company.trim().isEmpty()) {
             any |= addRow("Firma", join(" – ", card.company.trim(), card.unit.trim()), null);
         }
@@ -262,10 +270,17 @@ public class MainActivity extends Activity implements CardService.Listener {
     private void updateModeUi() {
         boolean link = Card.MODE_LINK.equals(card.mode);
         boolean insta = Card.MODE_INSTAGRAM.equals(card.mode);
-        modeContact.setSelected(!link && !insta);
+        boolean cv = Card.MODE_CV.equals(card.mode);
+        modeContact.setSelected(!link && !insta && !cv);
         modeLink.setSelected(link);
         modeInstagram.setSelected(insta);
-        if (link && !card.hasLink()) {
+        modeCv.setSelected(cv);
+        findViewById(R.id.shareCv).setVisibility(card.hasCv() ? View.VISIBLE : View.GONE);
+        if (cv && !card.hasCv()) {
+            hint.setText("Es ist noch kein Lebenslauf-Link eingetragen. Bis dahin geht dein Kontakt raus – trag ihn unten unter „Deine Daten“ ein.");
+        } else if (cv) {
+            hint.setText("Das andere Handy öffnet deinen Lebenslauf als PDF – den von deinem Portfolio, ohne persönliche Angaben. Klappt mit iPhone (ab XS) und Android.");
+        } else if (link && !card.hasLink()) {
             hint.setText("Es ist noch keine Website eingetragen. Bis dahin geht dein Kontakt raus – trag sie unten unter „Deine Daten“ ein.");
         } else if (link) {
             hint.setText("Das andere Handy öffnet " + card.linkLabel()
@@ -280,6 +295,16 @@ public class MainActivity extends Activity implements CardService.Listener {
                     + (card.hasLinkedin() ? " – inklusive LinkedIn-Profil" : "") + ". "
                     + "iPhones zeigen eine Kontaktkarte per NFC nicht von selbst an – nimm dafür „Website“ oder „Instagram“.");
         }
+    }
+
+    /** Teilt den Link zum Lebenslauf über das Android-Teilen-Menü (WhatsApp, Mail, Quick Share …). */
+    private void shareCv() {
+        if (!card.hasCv()) return;
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT, "Lebenslauf " + card.name.trim());
+        send.putExtra(Intent.EXTRA_TEXT, "Hallöchen :) Hier ist mein Lebenslauf: " + card.cvUrl());
+        startActivity(Intent.createChooser(send, "Lebenslauf teilen"));
     }
 
     // ---------- NFC ----------
@@ -374,6 +399,7 @@ public class MainActivity extends Activity implements CardService.Listener {
         fCity.setText(card.city);
         fInstagram.setText(card.instagram);
         fLinkedin.setText(card.linkedin);
+        fCv.setText(card.cv);
         editToggle.setVisibility(View.GONE);
         editBox.setVisibility(View.VISIBLE);
         scroll.post(() -> scroll.smoothScrollTo(0, editBox.getTop()));
@@ -408,6 +434,7 @@ public class MainActivity extends Activity implements CardService.Listener {
         card.city = fCity.getText().toString().trim();
         card.instagram = fInstagram.getText().toString().trim();
         card.linkedin = fLinkedin.getText().toString().trim();
+        card.cv = fCv.getText().toString().trim();
         card.save(this);
         closeEditor();
         bindCard();

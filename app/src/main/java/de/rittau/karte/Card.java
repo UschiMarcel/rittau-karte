@@ -13,6 +13,9 @@ public final class Card {
     public static final String MODE_CONTACT = "contact";
     public static final String MODE_LINK = "link";
     public static final String MODE_INSTAGRAM = "instagram";
+    public static final String MODE_CV = "cv";
+    public static final String DEFAULT_CV =
+            "https://uschimarcel.github.io/Portfolio/dateien/Lebenslauf_Marcel_Rittau.pdf";
 
     private static final String PREFS = "karte";
 
@@ -26,6 +29,7 @@ public final class Card {
     public String city;
     public String instagram;
     public String linkedin;
+    public String cv;
     public String mode;
 
     public static Card load(Context c) {
@@ -41,6 +45,7 @@ public final class Card {
         k.city = p.getString("city", "Köln");
         k.instagram = p.getString("instagram", "");
         k.linkedin = p.getString("linkedin", "");
+        k.cv = p.getString("cv", DEFAULT_CV);
         k.mode = p.getString("mode", MODE_CONTACT);
         return k;
     }
@@ -57,6 +62,7 @@ public final class Card {
                 .putString("city", city)
                 .putString("instagram", instagram)
                 .putString("linkedin", linkedin)
+                .putString("cv", cv)
                 .putString("mode", mode)
                 .apply();
     }
@@ -96,6 +102,18 @@ public final class Card {
 
     public String instagramUrl() {
         return "https://www.instagram.com/" + instagramHandle() + "/";
+    }
+
+    // ---------- Lebenslauf ----------
+
+    public boolean hasCv() {
+        return cv != null && !cv.trim().isEmpty();
+    }
+
+    public String cvUrl() {
+        String c = cv.trim();
+        if (!c.matches("(?i)^[a-z][a-z0-9+.-]*:.*")) c = "https://" + c;
+        return c;
     }
 
     // ---------- LinkedIn ----------
@@ -155,6 +173,8 @@ public final class Card {
         NdefRecord record;
         if (MODE_LINK.equals(mode) && hasLink()) {
             record = NdefRecord.createUri(linkUrl());
+        } else if (MODE_CV.equals(mode) && hasCv()) {
+            record = NdefRecord.createUri(cvUrl());
         } else if (MODE_INSTAGRAM.equals(mode) && hasInstagram()) {
             record = NdefRecord.createUri(instagramUrl());
         } else {
