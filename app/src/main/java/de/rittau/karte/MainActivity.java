@@ -48,6 +48,7 @@ public class MainActivity extends Activity implements CardService.Listener {
     private boolean reducedMotion;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
+    private TextView diag;
     private TextView name, statement, status, chip, hint, nfcSettings, modeContact, modeLink, modeInstagram, modeCv, editToggle;
     private LinearLayout meta, editBox;
     private ImageView shape;
@@ -73,6 +74,7 @@ public class MainActivity extends Activity implements CardService.Listener {
         statement = findViewById(R.id.statement);
         meta = findViewById(R.id.meta);
         status = findViewById(R.id.status);
+        diag = findViewById(R.id.diag);
         chip = findViewById(R.id.chip);
         hint = findViewById(R.id.hint);
         shape = findViewById(R.id.shape);
@@ -125,19 +127,9 @@ public class MainActivity extends Activity implements CardService.Listener {
             } catch (Exception ignored) {
                 // Ohne bevorzugten Dienst funktioniert es meist trotzdem.
             }
-            // Eigenes Lesen abschalten: Solange die App offen ist, sucht das Handy nur noch nach
-            // einer sehr seltenen Tag-Art (NFC-Barcode) und hört sonst nur zu. So stören sich
-            // zwei Android-Handys nicht mehr gegenseitig, und das andere kann die Karte lesen.
-            try {
-                nfc.enableReaderMode(this, tag -> { },
-                        NfcAdapter.FLAG_READER_NFC_BARCODE
-                                | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
-                                | NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
-                        null);
-            } catch (Exception ignored) {
-            }
         }
         updateNfcState();
+        showDiag();
     }
 
     @Override
@@ -148,10 +140,6 @@ public class MainActivity extends Activity implements CardService.Listener {
         if (nfc != null) {
             try {
                 CardEmulation.getInstance(nfc).unsetPreferredService(this);
-            } catch (Exception ignored) {
-            }
-            try {
-                nfc.disableReaderMode(this);
             } catch (Exception ignored) {
             }
         }
@@ -352,9 +340,28 @@ public class MainActivity extends Activity implements CardService.Listener {
     }
 
     @Override
+    public void onEvent(String text) {
+        showDiag();
+    }
+
+    private void showDiag() {
+        String e = CardService.lastEvent;
+        if (e == null) {
+            diag.setText("Letzter Kontakt: noch keiner seit dem Start");
+            return;
+        }
+        long sec = Math.max(0, (System.currentTimeMillis() - CardService.lastEventAt) / 1000);
+        String when = sec < 60 ? "vor " + sec + " s" : "vor " + (sec / 60) + " min";
+        diag.setText("Letzter Kontakt (" + when + "): " + e);
+    }
+
+    @Override
     public void onSent() {
         showStatus("Gesendet. Auf dem anderen Handy ist jetzt deine Karte.", "GESENDET");
         shape.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
+        CardService.lastEvent = "Karte komplett gelesen.";
+        CardService.lastEventAt = System.currentTimeMillis();
+        showDiag();
         wobble();
         handler.removeCallbacks(backToReady);
         handler.postDelayed(backToReady, 4000);
