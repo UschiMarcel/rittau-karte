@@ -125,6 +125,17 @@ public class MainActivity extends Activity implements CardService.Listener {
             } catch (Exception ignored) {
                 // Ohne bevorzugten Dienst funktioniert es meist trotzdem.
             }
+            // Eigenes Lesen abschalten: Solange die App offen ist, sucht das Handy nur noch nach
+            // einer sehr seltenen Tag-Art (NFC-Barcode) und hört sonst nur zu. So stören sich
+            // zwei Android-Handys nicht mehr gegenseitig, und das andere kann die Karte lesen.
+            try {
+                nfc.enableReaderMode(this, tag -> { },
+                        NfcAdapter.FLAG_READER_NFC_BARCODE
+                                | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+                                | NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS,
+                        null);
+            } catch (Exception ignored) {
+            }
         }
         updateNfcState();
     }
@@ -137,6 +148,10 @@ public class MainActivity extends Activity implements CardService.Listener {
         if (nfc != null) {
             try {
                 CardEmulation.getInstance(nfc).unsetPreferredService(this);
+            } catch (Exception ignored) {
+            }
+            try {
+                nfc.disableReaderMode(this);
             } catch (Exception ignored) {
             }
         }
@@ -325,7 +340,7 @@ public class MainActivity extends Activity implements CardService.Listener {
             nfcSettings.setVisibility(View.VISIBLE);
             stopBreathing();
         } else {
-            showStatus("Bereit. Halt dein Handy Rücken an Rücken an ein anderes.", "BEREIT");
+            showStatus("Bereit. Halt dein Handy Rücken an Rücken an ein anderes – das muss entsperrt sein und NFC an haben.", "BEREIT");
             nfcSettings.setVisibility(View.GONE);
             startBreathing();
         }
