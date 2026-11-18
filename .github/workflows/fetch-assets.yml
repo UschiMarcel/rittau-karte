@@ -1,0 +1,43 @@
+name: Logo vom alten Portfolio holen
+
+# Einmal-Helfer: lädt Favicon und Header-Logo von marcelrittau.myportfolio.com
+# nach assets/alt-portfolio/ und committet sie.
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/fetch-assets.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bilder laden
+        run: |
+          set -x
+          D=assets/alt-portfolio; mkdir -p "$D"
+          UA="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36"
+          curl -fsSL -A "$UA" https://marcelrittau.myportfolio.com/ -o "$D/seite.html"
+          grep -oiE '<link[^>]+>' "$D/seite.html" | grep -iE 'icon' > "$D/icon-links.txt" || true
+          cat "$D/icon-links.txt"
+          i=0
+          grep -oiE 'href="[^"]+"' "$D/icon-links.txt" | sed -E 's/href="([^"]+)"/\1/I' | sed 's/&amp;/\&/g' | sort -u | while read -r u; do
+            case "$u" in //*) u="https:$u";; /*) u="https://marcelrittau.myportfolio.com$u";; esac
+            i=$((i+1)); curl -fsSL -A "$UA" "$u" -o "$D/icon-$i.bin" && echo "$u" > "$D/icon-$i.url" || true
+          done
+          curl -fsSL -A "$UA" https://marcelrittau.myportfolio.com/favicon.ico -o "$D/favicon.ico" || true
+          curl -fsSL -A "$UA" "https://cdn.myportfolio.com/c32dad5f-81d8-4d5d-ae4b-0cb41d2feb41/3246e0b1-e851-49ad-9e49-cd70637a82a9.png" -o "$D/header-logo-original.png" || true
+          curl -fsSL -A "$UA" "https://cdn.myportfolio.com/c32dad5f-81d8-4d5d-ae4b-0cb41d2feb41/3246e0b1-e851-49ad-9e49-cd70637a82a9_rwc_1x142x344x203x4096.png?h=9c8a76cdf8301da80bc7fcdcfd4a3f16" -o "$D/header-logo.png" || true
+          for f in "$D"/*; do file "$f"; done
+      - name: Committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/alt-portfolio
+          git commit -m "Bilder vom alten Portfolio geholt" || echo "nichts Neues"
+          git push

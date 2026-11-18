@@ -8,6 +8,10 @@ name: APK bauen
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "assets/**"
+      - "README.md"
+      - ".github/workflows/fetch-assets.yml"
   workflow_dispatch:
 
 permissions:
