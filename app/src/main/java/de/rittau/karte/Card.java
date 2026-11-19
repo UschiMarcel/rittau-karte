@@ -16,7 +16,8 @@ public final class Card {
     public static final String MODE_CV = "cv";
     public static final String DEFAULT_LINKEDIN = "https://www.linkedin.com/in/marcel-rittau-4a46b4281/";
     /** Wird hochgezählt, wenn neue Standardwerte auch bei bestehenden Installationen ankommen sollen. */
-    private static final int DEFAULTS_VERSION = 3;
+    private static final int DEFAULTS_VERSION = 4;
+    public static final String DEFAULT_INSTAGRAM = "marcel.vitor";
     public static final String DEFAULT_EMAIL = "Rittau.Marcel@gmail.com";
     public static final String DEFAULT_PHONE = "+49 160 96211952";
     public static final String DEFAULT_CV =
@@ -52,7 +53,8 @@ public final class Card {
         }
         k.web = p.getString("web", "https://uschimarcel.github.io/Portfolio/");
         k.city = p.getString("city", "Köln");
-        k.instagram = p.getString("instagram", "");
+        k.instagram = p.getString("instagram", DEFAULT_INSTAGRAM);
+        if (p.getInt("defaults", 1) < 4 && k.instagram.trim().isEmpty()) k.instagram = DEFAULT_INSTAGRAM;
         k.linkedin = p.getString("linkedin", DEFAULT_LINKEDIN);
         if (p.getInt("defaults", 1) < 2 && k.linkedin.trim().isEmpty()) k.linkedin = DEFAULT_LINKEDIN;
         k.cv = p.getString("cv", DEFAULT_CV);
