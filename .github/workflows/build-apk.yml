@@ -27,6 +27,9 @@ jobs:
     env:
       VERSION_CODE: ${{ github.run_number }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      # Fingerabdruck des rittau-Schlüssels. Nur APKs mit genau diesem Schlüssel werden veröffentlicht.
+      CERT_SHA256: 84f0ccdd83571a032e67be40dc59cc51d1dda8a28cd79c40da05cbfec7778efd
     steps:
       - uses: actions/checkout@v4
 
@@ -50,6 +53,14 @@ jobs:
             echo "Logo ist kein PNG – die App zeigt einen Platzhalter."; rm -f "$F"
           fi
 
+      - name: Schlüssel aus Secret holen
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "Secrets KEYSTORE_BASE64 und KEYSTORE_PASSWORD fehlen (Settings → Secrets and variables → Actions)."; exit 1
+          fi
+          mkdir -p signing
+          echo "$KEYSTORE_BASE64" | base64 -d > signing/rittau-karte.jks
+
       - name: APK bauen
         run: gradle assembleRelease --no-daemon --stacktrace
 
@@ -58,8 +69,9 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk rittau-karte.apk
           SIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
           "$SIGNER" verify --print-certs rittau-karte.apk | grep -i "SHA-256" | head -1
-          "$SIGNER" verify --print-certs rittau-karte.apk | grep -qi "CN=Marcel Rittau" \
+          "$SIGNER" verify --print-certs rittau-karte.apk | grep -i "SHA-256" | grep -qi "$CERT_SHA256" \
             || { echo "APK ist nicht mit dem rittau-Schlüssel signiert – Updates würden scheitern."; exit 1; }
+          rm -f signing/rittau-karte.jks
 
       - uses: actions/upload-artifact@v4
         with:

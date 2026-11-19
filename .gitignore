@@ -4,3 +4,8 @@ app/build/
 local.properties
 .idea/
 *.iml
+
+# Signaturschlüssel nie ins Repo – liegt als GitHub-Secret
+signing/
+*.jks
+*.keystore

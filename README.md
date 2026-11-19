@@ -23,7 +23,7 @@ Auf dem Handy öffnen, installieren („Installation aus unbekannten Quellen“ 
 
 Die App selbst geht nicht ins Internet (keine Internet-Berechtigung) – das macht sie für Play Protect unverdächtiger.
 
-Wichtig: Jede Version wird mit demselben Schlüssel (`signing/rittau-karte.jks`) signiert. Den Schlüssel nie löschen oder austauschen – sonst lässt sich die App nicht mehr updaten, nur neu installieren.
+Wichtig: Jede Version wird mit demselben Schlüssel signiert. Er liegt **nicht** im Repo, sondern als GitHub-Secret (`KEYSTORE_BASE64` + `KEYSTORE_PASSWORD`, unter Settings → Secrets and variables → Actions). Bewahre eine Kopie sicher auf (z. B. im Passwort-Manager) – geht er verloren, lässt sich die App nicht mehr updaten, nur neu installieren. Der Build prüft den Fingerabdruck (`CERT_SHA256` im Workflow).
 
 ## Lokal bauen
 
