@@ -19,7 +19,9 @@ Auf dem Handy öffnen, installieren („Installation aus unbekannten Quellen“ 
 
 1. Änderung am Code machen und auf `main` pushen.
 2. GitHub Actions baut automatisch eine neue Version (Versionsnummer zählt hoch) und veröffentlicht sie als Release.
-3. Die App meldet sich beim nächsten Start unter **04/ Update** und lädt die neue APK. Sie wird einfach über die alte installiert, deine Daten bleiben.
+3. In der App unter **04/ Update** auf „Nach Update suchen“ tippen – das öffnet die neueste Version im Browser. Ist die Nummer höher als die installierte, `rittau-karte.apk` laden und über die alte installieren, deine Daten bleiben.
+
+Die App selbst geht nicht ins Internet (keine Internet-Berechtigung) – das macht sie für Play Protect unverdächtiger.
 
 Wichtig: Jede Version wird mit demselben Schlüssel (`signing/rittau-karte.jks`) signiert. Den Schlüssel nie löschen oder austauschen – sonst lässt sich die App nicht mehr updaten, nur neu installieren.
 

@@ -184,8 +184,7 @@
             android:id="@+id/editBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:orientation="vertical">
 
             <TextView style="@style/FieldLabel" android:text="Name" />
             <EditText
@@ -254,7 +253,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Update-Hinweis (nur sichtbar, wenn es eine neuere Version gibt) -->
+        <!-- Update: manueller Check über den Browser -->
         <LinearLayout
             android:id="@+id/updateBox"
             android:layout_width="match_parent"
@@ -289,7 +288,7 @@
                 android:id="@+id/updateBtn"
                 style="@style/PillPrimary"
                 android:layout_marginTop="16dp"
-                android:text="Update laden" />
+                android:text="Nach Update suchen" />
         </LinearLayout>
 
         <!-- Fuß -->
