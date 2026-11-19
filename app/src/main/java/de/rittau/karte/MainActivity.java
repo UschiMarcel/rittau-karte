@@ -31,6 +31,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+
+
 public class MainActivity extends Activity implements CardService.Listener {
 
     private Card card;
@@ -38,11 +40,12 @@ public class MainActivity extends Activity implements CardService.Listener {
     private boolean reducedMotion;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private TextView name, statement, status, chip, hint, nfcSettings, modeContact, modeLink, editToggle;
+    private TextView diag;
+    private TextView name, statement, status, chip, hint, nfcSettings, modeContact, modeLink, modeInstagram, modeCv, editToggle;
     private LinearLayout meta, editBox;
     private ImageView shape;
     private ScrollView scroll;
-    private EditText fName, fRole, fCompany, fUnit, fEmail, fPhone, fWeb, fCity;
+    private EditText fName, fRole, fCompany, fUnit, fEmail, fPhone, fWeb, fCity, fInstagram, fLinkedin, fCv;
     private ObjectAnimator breathing;
 
     private final Runnable backToReady = this::updateNfcState;
@@ -63,12 +66,15 @@ public class MainActivity extends Activity implements CardService.Listener {
         statement = findViewById(R.id.statement);
         meta = findViewById(R.id.meta);
         status = findViewById(R.id.status);
+        diag = findViewById(R.id.diag);
         chip = findViewById(R.id.chip);
         hint = findViewById(R.id.hint);
         shape = findViewById(R.id.shape);
         nfcSettings = findViewById(R.id.nfcSettings);
         modeContact = findViewById(R.id.modeContact);
         modeLink = findViewById(R.id.modeLink);
+        modeInstagram = findViewById(R.id.modeInstagram);
+        modeCv = findViewById(R.id.modeCv);
         editToggle = findViewById(R.id.editToggle);
         editBox = findViewById(R.id.editBox);
         fName = findViewById(R.id.fName);
@@ -79,11 +85,17 @@ public class MainActivity extends Activity implements CardService.Listener {
         fPhone = findViewById(R.id.fPhone);
         fWeb = findViewById(R.id.fWeb);
         fCity = findViewById(R.id.fCity);
+        fInstagram = findViewById(R.id.fInstagram);
+        fLinkedin = findViewById(R.id.fLinkedin);
+        fCv = findViewById(R.id.fCv);
 
         setupLogo();
 
         modeContact.setOnClickListener(v -> setMode(Card.MODE_CONTACT));
         modeLink.setOnClickListener(v -> setMode(Card.MODE_LINK));
+        modeInstagram.setOnClickListener(v -> setMode(Card.MODE_INSTAGRAM));
+        modeCv.setOnClickListener(v -> setMode(Card.MODE_CV));
+        findViewById(R.id.shareCv).setOnClickListener(v -> shareCv());
         nfcSettings.setOnClickListener(v -> openNfcSettings());
         editToggle.setOnClickListener(v -> openEditor());
         findViewById(R.id.cancel).setOnClickListener(v -> closeEditor());
@@ -111,6 +123,7 @@ public class MainActivity extends Activity implements CardService.Listener {
             }
         }
         updateNfcState();
+        showDiag();
     }
 
     @Override
@@ -179,6 +192,18 @@ public class MainActivity extends Activity implements CardService.Listener {
             any |= addRow("Web", card.linkLabel(),
                     new Intent(Intent.ACTION_VIEW, Uri.parse(card.linkUrl())));
         }
+        if (card.hasLinkedin()) {
+            any |= addRow("LinkedIn", card.linkedinLabel(),
+                    new Intent(Intent.ACTION_VIEW, Uri.parse(card.linkedinUrl())));
+        }
+        if (card.hasInstagram()) {
+            any |= addRow("Instagram", "@" + card.instagramHandle(),
+                    new Intent(Intent.ACTION_VIEW, Uri.parse(card.instagramUrl())));
+        }
+        if (card.hasCv()) {
+            any |= addRow("Lebenslauf", "PDF ansehen",
+                    new Intent(Intent.ACTION_VIEW, Uri.parse(card.cvUrl())));
+        }
         if (!card.company.trim().isEmpty()) {
             any |= addRow("Firma", join(" – ", card.company.trim(), card.unit.trim()), null);
         }
@@ -241,17 +266,42 @@ public class MainActivity extends Activity implements CardService.Listener {
 
     private void updateModeUi() {
         boolean link = Card.MODE_LINK.equals(card.mode);
-        modeContact.setSelected(!link);
+        boolean insta = Card.MODE_INSTAGRAM.equals(card.mode);
+        boolean cv = Card.MODE_CV.equals(card.mode);
+        modeContact.setSelected(!link && !insta && !cv);
         modeLink.setSelected(link);
-        if (link && !card.hasLink()) {
-            hint.setText("Es ist noch keine Website eingetragen. Bis dahin geht dein Kontakt raus – trag unten unter „Deine Daten“ eine ein.");
+        modeInstagram.setSelected(insta);
+        modeCv.setSelected(cv);
+        findViewById(R.id.shareCv).setVisibility(card.hasCv() ? View.VISIBLE : View.GONE);
+        if (cv && !card.hasCv()) {
+            hint.setText("Es ist noch kein Lebenslauf-Link eingetragen. Bis dahin geht dein Kontakt raus – trag ihn unten unter „Deine Daten“ ein.");
+        } else if (cv) {
+            hint.setText("Das andere Handy öffnet deinen Lebenslauf als PDF – den von deinem Portfolio, ohne persönliche Angaben. Klappt mit iPhone (ab XS) und Android.");
+        } else if (link && !card.hasLink()) {
+            hint.setText("Es ist noch keine Website eingetragen. Bis dahin geht dein Kontakt raus – trag sie unten unter „Deine Daten“ ein.");
         } else if (link) {
             hint.setText("Das andere Handy öffnet " + card.linkLabel()
                     + ". Klappt mit iPhone (ab XS) und Android.");
+        } else if (insta && !card.hasInstagram()) {
+            hint.setText("Es ist noch kein Instagram eingetragen. Bis dahin geht dein Kontakt raus – trag es unten unter „Deine Daten“ ein.");
+        } else if (insta) {
+            hint.setText("Das andere Handy öffnet dein Instagram-Profil @" + card.instagramHandle()
+                    + " – direkt in der Instagram-App, wenn sie installiert ist. Klappt mit iPhone (ab XS) und Android.");
         } else {
-            hint.setText("Android-Handys bieten direkt an, dich als Kontakt zu speichern. "
-                    + "iPhones zeigen eine Kontaktkarte per NFC nicht von selbst an – nimm dafür „Link“.");
+            hint.setText("Android-Handys bieten direkt an, dich als Kontakt zu speichern"
+                    + (card.hasLinkedin() ? " – inklusive LinkedIn-Profil" : "") + ". "
+                    + "iPhones zeigen eine Kontaktkarte per NFC nicht von selbst an – nimm dafür „Website“ oder „Instagram“.");
         }
+    }
+
+    /** Teilt den Link zum Lebenslauf über das Android-Teilen-Menü (WhatsApp, Mail, Quick Share …). */
+    private void shareCv() {
+        if (!card.hasCv()) return;
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT, "Lebenslauf " + card.name.trim());
+        send.putExtra(Intent.EXTRA_TEXT, "Hallöchen :) Hier ist mein Lebenslauf: " + card.cvUrl());
+        startActivity(Intent.createChooser(send, "Lebenslauf teilen"));
     }
 
     // ---------- NFC ----------
@@ -272,7 +322,7 @@ public class MainActivity extends Activity implements CardService.Listener {
             nfcSettings.setVisibility(View.VISIBLE);
             stopBreathing();
         } else {
-            showStatus("Bereit. Halt dein Handy Rücken an Rücken an ein anderes.", "BEREIT");
+            showStatus("Bereit. Halt dein Handy Rücken an Rücken an ein anderes – das muss entsperrt sein und NFC an haben.", "BEREIT");
             nfcSettings.setVisibility(View.GONE);
             startBreathing();
         }
@@ -284,9 +334,28 @@ public class MainActivity extends Activity implements CardService.Listener {
     }
 
     @Override
+    public void onEvent(String text) {
+        showDiag();
+    }
+
+    private void showDiag() {
+        String e = CardService.lastEvent;
+        if (e == null) {
+            diag.setText("Letzter Kontakt: noch keiner seit dem Start");
+            return;
+        }
+        long sec = Math.max(0, (System.currentTimeMillis() - CardService.lastEventAt) / 1000);
+        String when = sec < 60 ? "vor " + sec + " s" : "vor " + (sec / 60) + " min";
+        diag.setText("Letzter Kontakt (" + when + "): " + e);
+    }
+
+    @Override
     public void onSent() {
         showStatus("Gesendet. Auf dem anderen Handy ist jetzt deine Karte.", "GESENDET");
         shape.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
+        CardService.lastEvent = "Karte komplett gelesen.";
+        CardService.lastEventAt = System.currentTimeMillis();
+        showDiag();
         wobble();
         handler.removeCallbacks(backToReady);
         handler.postDelayed(backToReady, 4000);
@@ -344,6 +413,9 @@ public class MainActivity extends Activity implements CardService.Listener {
         fPhone.setText(card.phone);
         fWeb.setText(card.web);
         fCity.setText(card.city);
+        fInstagram.setText(card.instagram);
+        fLinkedin.setText(card.linkedin);
+        fCv.setText(card.cv);
         editToggle.setVisibility(View.GONE);
         editBox.setVisibility(View.VISIBLE);
         scroll.post(() -> scroll.smoothScrollTo(0, editBox.getTop()));
@@ -376,6 +448,9 @@ public class MainActivity extends Activity implements CardService.Listener {
         card.phone = fPhone.getText().toString().trim();
         card.web = fWeb.getText().toString().trim();
         card.city = fCity.getText().toString().trim();
+        card.instagram = fInstagram.getText().toString().trim();
+        card.linkedin = fLinkedin.getText().toString().trim();
+        card.cv = fCv.getText().toString().trim();
         card.save(this);
         closeEditor();
         bindCard();
@@ -383,11 +458,9 @@ public class MainActivity extends Activity implements CardService.Listener {
     }
 
     // ---------- Updates ----------
+    // Die App selbst hat bewusst keinen Internetzugriff: Eine NFC-App mit Netz wirkt auf
+    // Google Play Protect wie Schadsoftware, die Karten weiterleitet. Updates holt der Browser.
 
-    /**
-     * Manueller Update-Check: öffnet die Seite der neuesten Version im Browser.
-     * Die App selbst geht dabei nicht ins Internet und braucht keine Internet-Berechtigung.
-     */
     private void openReleasePage() {
         String url = "https://github.com/" + BuildConfig.REPO + "/releases/latest";
         try {
