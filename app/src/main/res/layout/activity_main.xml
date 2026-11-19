@@ -315,8 +315,7 @@
             android:id="@+id/updateBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:orientation="vertical">
 
             <View
                 style="@style/Line"
@@ -329,6 +328,7 @@
 
             <TextView
                 android:id="@+id/updateText"
+                android:text="Lädt die neueste Version im Browser. Einfach über die alte installieren – deine Daten bleiben erhalten."
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -345,7 +345,7 @@
                 android:id="@+id/updateBtn"
                 style="@style/PillPrimary"
                 android:layout_marginTop="16dp"
-                android:text="Update laden" />
+                android:text="Nach Update suchen" />
         </LinearLayout>
 
         <!-- Fuß -->

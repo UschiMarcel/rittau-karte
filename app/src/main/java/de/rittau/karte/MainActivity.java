@@ -31,15 +31,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MainActivity extends Activity implements CardService.Listener {
 
@@ -113,7 +105,6 @@ public class MainActivity extends Activity implements CardService.Listener {
 
         ((TextView) findViewById(R.id.version)).setText("Version " + BuildConfig.VERSION_NAME);
         findViewById(R.id.updateBtn).setOnClickListener(v -> openDownload());
-        checkForUpdate();
     }
 
     @Override
@@ -464,45 +455,8 @@ public class MainActivity extends Activity implements CardService.Listener {
     }
 
     // ---------- Updates ----------
-
-    /** Fragt bei GitHub nach, ob es einen neueren Build gibt. Ohne Internet passiert einfach nichts. */
-    private void checkForUpdate() {
-        new Thread(() -> {
-            HttpURLConnection c = null;
-            try {
-                URL url = new URL("https://api.github.com/repos/" + BuildConfig.REPO + "/releases/latest");
-                c = (HttpURLConnection) url.openConnection();
-                c.setConnectTimeout(6000);
-                c.setReadTimeout(6000);
-                c.setRequestProperty("Accept", "application/vnd.github+json");
-                if (c.getResponseCode() != 200) return;
-                StringBuilder body = new StringBuilder();
-                try (BufferedReader r = new BufferedReader(
-                        new InputStreamReader(c.getInputStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = r.readLine()) != null) body.append(line);
-                }
-                String tag = new JSONObject(body.toString()).optString("tag_name", "");
-                Matcher m = Pattern.compile("(\\d+)$").matcher(tag);
-                if (!m.find()) return;
-                int latest = Integer.parseInt(m.group(1));
-                if (latest > BuildConfig.VERSION_CODE) {
-                    runOnUiThread(() -> showUpdate(latest));
-                }
-            } catch (Exception ignored) {
-                // Kein Netz oder GitHub nicht erreichbar – dann eben beim nächsten Start.
-            } finally {
-                if (c != null) c.disconnect();
-            }
-        }).start();
-    }
-
-    private void showUpdate(int latest) {
-        ((TextView) findViewById(R.id.updateText)).setText("Version 1." + latest
-                + " ist da (du hast " + BuildConfig.VERSION_NAME + "). "
-                + "Lade sie und installier sie einfach über die alte – deine Daten bleiben erhalten.");
-        findViewById(R.id.updateBox).setVisibility(View.VISIBLE);
-    }
+    // Die App selbst hat bewusst keinen Internetzugriff: Eine NFC-App mit Netz wirkt auf
+    // Google Play Protect wie Schadsoftware, die Karten weiterleitet. Updates holt der Browser.
 
     private void openDownload() {
         String url = "https://github.com/" + BuildConfig.REPO + "/releases/latest/download/rittau-karte.apk";
