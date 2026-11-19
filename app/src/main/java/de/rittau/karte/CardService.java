@@ -15,24 +15,9 @@ public class CardService extends HostApduService {
 
     public interface Listener {
         void onSent();
-
-        void onEvent(String text);
     }
 
     static volatile Listener listener;
-
-    /** Letztes Ereignis, damit die App zeigen kann, wie weit das andere Handy gekommen ist. */
-    static volatile String lastEvent = null;
-    static volatile long lastEventAt = 0;
-
-    private void log(String text) {
-        lastEvent = text;
-        lastEventAt = System.currentTimeMillis();
-        main.post(() -> {
-            Listener l = listener;
-            if (l != null) l.onEvent(text);
-        });
-    }
 
     private static final byte[] NDEF_AID = {
             (byte) 0xD2, 0x76, 0x00, 0x00, (byte) 0x85, 0x01, 0x01
@@ -52,15 +37,6 @@ public class CardService extends HostApduService {
 
     @Override
     public byte[] processCommandApdu(byte[] apdu, Bundle extras) {
-        try {
-            return handle(apdu);
-        } catch (Exception e) {
-            log("Fehler in der App: " + e.getClass().getSimpleName());
-            return new byte[]{0x6F, 0x00};
-        }
-    }
-
-    private byte[] handle(byte[] apdu) {
         if (apdu == null || apdu.length < 4) return NOT_FOUND;
         int ins = apdu[1] & 0xFF;
         int p1 = apdu[2] & 0xFF;
@@ -77,12 +53,10 @@ public class CardService extends HostApduService {
                         notified = false;
                         current = null;
                         prepare();
-                        log("Anderes Handy verbunden, liest die Karte …");
                         return OK;
                     }
                 }
                 appSelected = false;
-                log("Anderes Handy fragt etwas anderes ab (kein NFC-Tag-Leser).");
                 return NOT_FOUND;
             }
             if (p1 == 0x00 && appSelected && apdu.length >= 7 && (apdu[4] & 0xFF) == 2) {
@@ -117,7 +91,6 @@ public class CardService extends HostApduService {
             return out;
         }
 
-        log("Unbekannter Befehl vom anderen Handy (" + String.format("%02X", ins) + ").");
         return INS_NOT_SUPPORTED;
     }
 
@@ -144,7 +117,6 @@ public class CardService extends HostApduService {
 
     @Override
     public void onDeactivated(int reason) {
-        if (appSelected && !notified) log("Verbindung abgerissen, bevor alles gelesen war.");
         appSelected = false;
         current = null;
     }
